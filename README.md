@@ -29,7 +29,7 @@ ls | q -1 'l.split("\n").reverse()'
 ls | q -1 'lines.toSorted().toReversed()'
 
 # Return a function: called with the line
-ls | q 'l.toUpperCase'
+ls | q l.toUpperCase
 ls | q Number
 
 # Sum a column, skipping the header line (n, s, a are pre-declared as 0, '', [])
@@ -46,11 +46,25 @@ cat events.ndjson | q -Jj '({ type: l.type, at: l.created_at })'
 
 ## Install
 
-```sh
-pnpm add -g @maxpatiiuk/q
-```
+1. Clone or fork this repository:
 
-Requires Node.js 22+.
+   ```sh
+   git clone https://github.com/maxpatiiuk/q
+   cd q
+   ```
+
+2. Install dependencies and build:
+
+   ```sh
+   pnpm install
+   pnpm build
+   ```
+
+3. Add an alias to shell rc file:
+
+   ```sh
+   alias q="node /path/to/q/dist/cli.js"
+   ```
 
 ## Output rules
 
