@@ -129,7 +129,7 @@ and skipped.
 pnpm install
 pnpm test        # vitest
 pnpm typecheck   # tsc
-pnpm build       # emits dist/
+pnpm build       # bundles to a single minified dist/cli.js (Vite)
 node src/cli.ts 'l.toUpperCase()' < README.md  # run from source
 ```
 

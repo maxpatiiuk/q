@@ -1,5 +1,6 @@
 import { once } from 'node:events';
-import { Writable } from 'node:stream';
+import type { Writable } from 'node:stream';
+import { format } from 'node:util';
 
 export type Output = {
   readonly write: (text: string) => void;
@@ -10,7 +11,7 @@ export type Output = {
    * Writes into the same buffer, so that `console.log()` output from user
    * code stays in order with the regular output.
    */
-  readonly stream: Writable;
+  readonly console: Console;
 };
 
 /**
@@ -54,12 +55,18 @@ export function createOutput(
       flushBuffer();
       await pending;
     },
-    stream: new Writable({
-      decodeStrings: false,
-      write(chunk: unknown, _encoding, callback): void {
-        write(String(chunk));
-        callback();
-      },
-    }),
+    console: createConsole(write),
   };
+}
+
+/**
+ * A console whose stdout methods write to the output buffer. Cheaper at
+ * startup than `new Console()`. Other methods, like `console.error()`, are
+ * the global ones.
+ */
+function createConsole(write: (text: string) => void): Console {
+  const log = (...data: readonly unknown[]): void => {
+    write(`${format(...data)}\n`);
+  };
+  return { ...globalThis.console, log, info: log, debug: log };
 }

@@ -1,7 +1,7 @@
 // Based off https://github.com/maxpatiiuk/max.patii.uk/tree/main/packages/typescript-config
 {
   "$schema": "https://json.schemastore.org/tsconfig.json",
-  "include": ["src"],
+  "include": ["src", "*.ts"],
   "compilerOptions": {
     //#region Type Checking
 
@@ -32,7 +32,7 @@
 
     //#region Emit
 
-    // Type-check only. Emit is done by tsconfig.build.json
+    // Type-check only. Bundling is done by Vite
     "noEmit": true,
     "outDir": "${configDir}/dist",
 

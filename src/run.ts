@@ -1,5 +1,5 @@
-import { Console } from 'node:console';
-import { createReadStream, readFileSync } from 'node:fs';
+import { createReadStream } from 'node:fs';
+import packageJson from '../package.json' with { type: 'json' };
 import type { Readable, Writable } from 'node:stream';
 import { compileProgram, installStringTest, type Program } from './compile.ts';
 import { type Options, parseCommand, usage, UsageError } from './options.ts';
@@ -60,7 +60,7 @@ export async function run(io: Io): Promise<ExitCode> {
       return exitCodes.selected;
     }
     if (command.type === 'version') {
-      io.stdout.write(`${readVersion()}\n`);
+      io.stdout.write(`${packageJson.version}\n`);
       return exitCodes.selected;
     }
     return await execute(command.options, io, report);
@@ -76,13 +76,6 @@ export async function run(io: Io): Promise<ExitCode> {
   }
 }
 
-function readVersion(): string {
-  const packageJson: unknown = JSON.parse(
-    readFileSync(new URL('../package.json', import.meta.url), 'utf8'),
-  );
-  return (packageJson as { readonly version: string }).version;
-}
-
 type Stats = {
   readonly selected: number;
   readonly hadFileError: boolean;
@@ -96,10 +89,7 @@ async function execute(
   installStringTest();
   const output = createOutput(io.stdout);
   try {
-    const program = await compileProgram(
-      options,
-      new Console({ stdout: output.stream, stderr: io.stderr }),
-    );
+    const program = await compileProgram(options, output.console);
     const input: Input = {
       open: (file) =>
         readInput(
