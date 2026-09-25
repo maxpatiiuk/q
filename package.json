@@ -1,0 +1,42 @@
+{
+  "name": "@maxpatiiuk/ni",
+  "version": "0.1.0",
+  "description": "AWK with modern syntax: process text line by line with JavaScript expressions",
+  "type": "module",
+  "license": "MIT",
+  "bin": {
+    "ni": "./dist/cli.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc",
+    "test": "vitest run",
+    "format": "prettier --write .",
+    "prepack": "node --run build"
+  },
+  "keywords": [
+    "awk",
+    "grep",
+    "cli",
+    "unix",
+    "pipe",
+    "text-processing"
+  ],
+  "packageManager": "pnpm@10.33.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/maxpatiiuk/ni"
+  },
+  "devDependencies": {
+    "@types/node": "^24.13.6",
+    "prettier": "^3.9.9",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.1"
+  }
+}

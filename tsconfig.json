@@ -1,0 +1,64 @@
+// Based off https://github.com/maxpatiiuk/max.patii.uk/tree/main/packages/typescript-config
+{
+  "$schema": "https://json.schemastore.org/tsconfig.json",
+  "include": ["src"],
+  "compilerOptions": {
+    //#region Type Checking
+
+    // Enable pretty much all checks to get the most benefit from TypeScript.
+    "allowUnreachableCode": false,
+    "exactOptionalPropertyTypes": true,
+    "noImplicitOverride": true,
+    "noImplicitReturns": true,
+    "noUncheckedIndexedAccess": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "strict": true,
+
+    //#endregion
+
+    //#region Modules
+
+    // Node.js-native ESM resolution with explicit .ts extensions, so that
+    // sources run as-is under Node's type stripping.
+    "allowImportingTsExtensions": true,
+    "module": "node20",
+    "moduleResolution": "node16",
+    "noUncheckedSideEffectImports": true,
+    "resolveJsonModule": true,
+    "types": ["node"],
+
+    //#endregion
+
+    //#region Emit
+
+    // Type-check only. Emit is done by tsconfig.build.json
+    "noEmit": true,
+    "outDir": "${configDir}/dist",
+
+    //#endregion
+
+    //#region Interop Constraints
+
+    "erasableSyntaxOnly": true,
+    "isolatedModules": true,
+    "verbatimModuleSyntax": true,
+
+    //#endregion
+
+    //#region Language and Environment
+
+    "lib": ["ESNext"],
+    // We don't use this feature. Disabling as a performance optimization.
+    "libReplacement": false,
+    "target": "es2024",
+
+    //#endregion
+
+    //#region Completeness
+
+    "skipLibCheck": true
+
+    //#endregion
+  }
+}
