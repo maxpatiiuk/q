@@ -110,6 +110,28 @@ const functionKeyword = (isAsync: boolean): string =>
   isAsync ? 'async function' : 'function';
 
 /**
+ * Pre-declared accumulators, so that `s += l` or `n += +c[0]` work without a
+ * `--begin`. Declared in an outer scope, so `--begin` may redeclare them.
+ */
+export const accumulators = "let s = '', n = 0, a = [];";
+
+/**
+ * A function result is called with the line as `this`, so that returning a
+ * method works: `ni 'l.toUpperCase'`. Functions that take arguments get the
+ * line: `ni Number`, `ni 'JSON.parse'`, `ni '(x) => x.trim()'`.
+ */
+function callResult(result: unknown, line: unknown): unknown {
+  if (typeof result === 'function') {
+    return result.length === 0
+      ? Reflect.apply(result, line, [])
+      : Reflect.apply(result, line, [line]);
+  }
+  return result instanceof Promise
+    ? result.then((resolved: unknown) => callResult(resolved, line))
+    : result;
+}
+
+/**
  * Compile begin, main, and end code into a single closure so that variables
  * declared in `--begin` are visible to the main code and to `--end`.
  *
@@ -130,6 +152,8 @@ export async function compileProgram(
   assertCompiles('--end', endBody, isEndAsync);
 
   const source = [
+    accumulators,
+    `return (${isBeginAsync ? 'async ' : ''}() => {`,
     begin,
     'return {',
     `  main: ${functionKeyword(isMainAsync)} (${recordParameters.join(', ')}) {`,
@@ -139,24 +163,27 @@ export async function compileProgram(
     endBody,
     '  },',
     '};',
+    '})();',
   ].join('\n');
-  const factory = new (isBeginAsync ? AsyncFunction : SyncFunction)(
-    'console',
-    source,
-  ) as (console: Console) => RawProgram | Promise<RawProgram>;
+  const factory = new SyncFunction('console', source) as (
+    console: Console,
+  ) => RawProgram | Promise<RawProgram>;
   const program = await factory(console);
   return {
     main: ({ line, index, columns, file, lines }) =>
-      program.main(
+      callResult(
+        program.main(
+          line,
+          line,
+          index,
+          index,
+          columns,
+          columns,
+          file,
+          file,
+          lines,
+        ),
         line,
-        line,
-        index,
-        index,
-        columns,
-        columns,
-        file,
-        file,
-        lines,
       ),
     end: program.end,
     usesColumns: usesColumns(main),

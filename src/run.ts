@@ -4,7 +4,13 @@ import type { Readable, Writable } from 'node:stream';
 import { compileProgram, installStringTest, type Program } from './compile.ts';
 import { type Options, parseCommand, usage, UsageError } from './options.ts';
 import { createOutput, type Output } from './output.ts';
-import { readAll, splitRecords, stripTrailingSeparator } from './records.ts';
+import {
+  readAll,
+  type Slice,
+  sliceRecords,
+  splitRecords,
+  stripTrailingSeparator,
+} from './records.ts';
 import { formatValue, isExcluded, render } from './render.ts';
 import { splitColumns } from './separators.ts';
 
@@ -163,13 +169,13 @@ async function processRecords(
   const hasPrefix = options.withFilename || options.lineNumber;
 
   for (const file of options.files) {
-    let lineNumber = 0;
     try {
-      for await (const batch of splitRecords(
-        input.open(file),
-        options.recordSeparator,
+      for await (const batch of sliceRecords(
+        splitRecords(input.open(file), options.recordSeparator),
+        options.slice ?? noSlice,
       )) {
-        for (const record of batch) {
+        let lineNumber = batch.lineNumber - 1;
+        for (const record of batch.records) {
           lineNumber += 1;
           if (options.jsonInput && record.trim() === '') {
             continue;
@@ -255,11 +261,12 @@ async function processWhole(
       }
     }),
   );
-  const text = stripTrailingSeparator(
-    contents.join(''),
-    options.recordSeparator,
+  const lines = contents.flatMap((content) =>
+    content === undefined
+      ? []
+      : splitWhole(content, options.recordSeparator, options.slice),
   );
-  const lines = text === '' ? [] : text.split(options.recordSeparator);
+  const text = lines.join(options.recordSeparator);
   const line = options.jsonInput
     ? await invoke(() => JSON.parse(text), 'input')
     : text;
@@ -285,6 +292,18 @@ async function processWhole(
     selected: rendered === undefined ? 0 : 1,
     hadFileError: contents.includes(undefined),
   };
+}
+
+const noSlice: Slice = { start: 0, end: undefined };
+
+function splitWhole(
+  content: string,
+  separator: string,
+  slice: Slice | undefined,
+): readonly string[] {
+  const text = stripTrailingSeparator(content, separator);
+  const lines = text === '' ? [] : text.split(separator);
+  return slice === undefined ? lines : lines.slice(slice.start, slice.end);
 }
 
 const prefix = (options: Options, file: string, lineNumber: number): string =>

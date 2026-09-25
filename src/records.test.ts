@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { readAll, splitRecords, stripTrailingSeparator } from './records.ts';
+import {
+  readAll,
+  sliceRecords,
+  splitRecords,
+  stripTrailingSeparator,
+} from './records.ts';
 
 async function* fromChunks(
   ...chunks: readonly string[]
@@ -44,4 +49,38 @@ describe(stripTrailingSeparator, () => {
     expect(stripTrailingSeparator('a\n\n', '\n')).toBe('a\n');
     expect(stripTrailingSeparator('a', '\n')).toBe('a');
   });
+});
+
+describe(sliceRecords, () => {
+  const records = Array.from({ length: 7 }, (_, index) => `r${index}`);
+  const bounds = [undefined, -9, -7, -3, -1, 0, 1, 3, 7, 9];
+
+  async function* batchesOf(
+    size: number,
+  ): AsyncGenerator<readonly string[], void, undefined> {
+    for (let index = 0; index < records.length; index += size) {
+      yield records.slice(index, index + size);
+    }
+  }
+
+  it.each([1, 2, 3, 10])(
+    'matches Array.slice() for batches of %i',
+    async (size) => {
+      for (const start of bounds) {
+        for (const end of bounds) {
+          const batches = await Array.fromAsync(
+            sliceRecords(batchesOf(size), { start: start ?? 0, end }),
+          );
+          const expected = records.slice(start, end);
+          expect(batches.flatMap((batch) => batch.records)).toEqual(expected);
+          // Line numbers of the kept records are contiguous
+          expect(
+            batches.flatMap(({ records, lineNumber }) =>
+              records.map((_, index) => lineNumber + index),
+            ),
+          ).toEqual(expected.map((record) => Number(record.slice(1)) + 1));
+        }
+      }
+    },
+  );
 });

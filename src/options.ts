@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { parseArgs } from 'node:util';
+import type { Slice } from './records.ts';
 import {
   type FieldSeparator,
   parseFieldSeparator,
@@ -21,6 +22,8 @@ export type Options = {
   readonly lineNumber: boolean;
   readonly withFilename: boolean;
   readonly maxCount: number;
+  /** Which lines of each file to process */
+  readonly slice: Slice | undefined;
   readonly fieldSeparator: FieldSeparator;
   readonly recordSeparator: string;
   readonly outputFieldSeparator: string;
@@ -43,6 +46,8 @@ Run JavaScript code for each line of input. The value of the last expression
 is printed in place of the line:
   string, number, ...     print it
   true                    print the original line
+  function                called with the line as "this" (and as the argument
+                          if it takes any), e.g. ni l.toUpperCase, ni Number
   undefined, null, false  skip the line
   RegExp                  print the line if it matches (ni '/error/i')
   array                   print items joined by spaces (by newlines in -1 mode)
@@ -55,6 +60,7 @@ Variables:
   c, columns     line split into columns (see -F); an array of rows in -1 mode
   f, file        current file name ("-" for stdin)
   lines          all lines (-1 mode only)
+  s, n, a        pre-declared accumulators: '', 0 and []
 
 Options:
   -b, --begin <code>        run code before reading input (may repeat); its
@@ -71,6 +77,9 @@ Options:
   -v, --invert-match        print the lines that <code> excludes
   -c, --count               print only the number of selected lines
   -m, --max-count <n>       stop after <n> selected lines
+  -s, --slice <start,end>   only process these lines of each file, with the
+                            syntax of Array.slice(): 1 skips the header,
+                            1,-1 also skips the footer, ,-3 skips the last 3
   -n, --line-number         prefix output with the 1-based line number
   -H, --with-filename       prefix output with the file name
   -q, --quiet               print nothing; exit on first selected line
@@ -87,7 +96,7 @@ Examples:
   ls | ni 'l.toUpperCase()'
   ls | ni '/zsh/'
   ps aux | ni 'c[10]'
-  ni -F, -b 'sum = 0' 'sum += +c[2];' -e 'sum' data.csv
+  ni -F, -s 1 'n += +c[2];' -e n data.csv
   cat data.json | ni -1J 'l.items.map((item) => item.name)'`;
 
 const optionsConfig = {
@@ -101,6 +110,7 @@ const optionsConfig = {
   'invert-match': { type: 'boolean', short: 'v' },
   count: { type: 'boolean', short: 'c' },
   'max-count': { type: 'string', short: 'm' },
+  slice: { type: 'string', short: 's' },
   'line-number': { type: 'boolean', short: 'n' },
   'with-filename': { type: 'boolean', short: 'H' },
   quiet: { type: 'boolean', short: 'q' },
@@ -156,6 +166,7 @@ export function parseCommand(
       lineNumber: values['line-number'] === true,
       withFilename: values['with-filename'] === true,
       maxCount: quiet ? 1 : parseMaxCount(values['max-count']),
+      slice: values.slice === undefined ? undefined : parseSlice(values.slice),
       fieldSeparator: parseFieldSeparator(values['field-separator'] ?? ' '),
       recordSeparator,
       outputFieldSeparator: separatorOr(values.ofs, ' '),
@@ -167,7 +178,7 @@ export function parseCommand(
 function parseArguments(args: readonly string[]) {
   try {
     return parseArgs({
-      args: [...args],
+      args: joinNegativeSlices(args),
       options: optionsConfig,
       allowPositionals: true,
       strict: true,
@@ -178,6 +189,28 @@ function parseArguments(args: readonly string[]) {
     );
   }
 }
+
+/**
+ * parseArgs() refuses option values that look like options, but negative
+ * slices such as `-s -3` are common
+ */
+const joinNegativeSlices = (args: readonly string[]): string[] =>
+  args.flatMap((arg, index) => {
+    const previous = args[index - 1];
+    const next = args[index + 1];
+    if (isSliceFlag(previous) && isNegativeSlice(arg)) {
+      return [];
+    }
+    return isSliceFlag(arg) && next !== undefined && isNegativeSlice(next)
+      ? [`--slice=${next}`]
+      : [arg];
+  });
+
+const isSliceFlag = (arg: string | undefined): boolean =>
+  arg === '-s' || arg === '--slice';
+
+const isNegativeSlice = (arg: string): boolean =>
+  /^-\d+(?:,-?\d*)?$/u.test(arg);
 
 const separatorOr = (value: string | undefined, fallback: string): string =>
   value === undefined ? fallback : unescapeSeparator(value);
@@ -191,4 +224,28 @@ function parseMaxCount(value: string | undefined): number {
     throw new UsageError(`invalid --max-count: ${value}`);
   }
   return count;
+}
+
+/** `1` (skip the header), `1,-1`, `,-3`, `-5` (the last 5 lines) */
+export function parseSlice(value: string): Slice {
+  const [start = '', end, ...rest] = value
+    .split(',')
+    .map((part) => part.trim());
+  const parse = (part: string): number | undefined => {
+    if (part === '') {
+      return undefined;
+    }
+    const number = Number(part);
+    if (!Number.isInteger(number)) {
+      throw new UsageError(`invalid --slice: ${value}`);
+    }
+    return number;
+  };
+  if (rest.length > 0) {
+    throw new UsageError(`invalid --slice: ${value}`);
+  }
+  return {
+    start: parse(start) ?? 0,
+    end: end === undefined ? undefined : parse(end),
+  };
 }

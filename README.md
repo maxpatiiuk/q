@@ -28,6 +28,13 @@ ni -F, 'c.slice(0, 2)' data.csv
 ls | ni -1 'l.split("\n").reverse()'
 ls | ni -1 'lines.toSorted().toReversed()'
 
+# Return a function: called with the line
+ls | ni 'l.toUpperCase'
+ls | ni Number
+
+# Sum a column, skipping the header line (n, s, a are pre-declared as 0, '', [])
+ls -al | ni -s 1 'n += +c[4];' -e n
+
 # Setup and summary (variables from --begin are visible everywhere)
 ni -b 'let sum = 0' 'sum += +c[2];' -e 'sum' data.txt
 ni -b 'console.log("start")' 'let t = c[0]; `${t}${c[2]}`' -e 'console.log("end")'
@@ -49,15 +56,16 @@ Requires Node.js 22+.
 
 The value of the last expression replaces the line:
 
-| Value                        | Output                                                           |
-| ---------------------------- | ---------------------------------------------------------------- |
-| string, number, ...          | printed as is (including `""` and `0`)                           |
-| `true`                       | the original line                                                |
-| `undefined`, `null`, `false` | nothing (the line is excluded)                                   |
-| `RegExp`                     | the original line if the regex matches it                        |
-| array, Set, generator...     | items joined by spaces (in `-1` mode: by newlines; nested: rows) |
-| plain object                 | JSON                                                             |
-| Promise                      | awaited, then printed by the rules above                         |
+| Value                        | Output                                                                                             |
+| ---------------------------- | -------------------------------------------------------------------------------------------------- |
+| string, number, ...          | printed as is (including `""` and `0`)                                                             |
+| `true`                       | the original line                                                                                  |
+| function                     | called with `this` = line (and line as the argument, if it takes any), then printed by these rules |
+| `undefined`, `null`, `false` | nothing (the line is excluded)                                                                     |
+| `RegExp`                     | the original line if the regex matches it                                                          |
+| array, Set, generator...     | items joined by spaces (in `-1` mode: by newlines; nested: rows)                                   |
+| plain object                 | JSON                                                                                               |
+| Promise                      | awaited, then printed by the rules above                                                           |
 
 - The code is a function body: statements are allowed, and the last expression
   statement is returned implicitly (`let t = c[0]; t + c[2]`).
@@ -71,13 +79,14 @@ The value of the last expression replaces the line:
 
 ## Variables
 
-| Name           | Value                                                              |
-| -------------- | ------------------------------------------------------------------ |
-| `l`, `line`    | current line (the whole input in `-1` mode; parsed JSON with `-J`) |
-| `i`, `index`   | 0-based line index across all inputs (AWK's `NR - 1`)              |
-| `c`, `columns` | line split into columns (see `-F`); in `-1` mode: an array of rows |
-| `f`, `file`    | current file name (`-` for stdin)                                  |
-| `lines`        | array of all lines (`-1` mode only)                                |
+| Name           | Value                                                                  |
+| -------------- | ---------------------------------------------------------------------- |
+| `l`, `line`    | current line (the whole input in `-1` mode; parsed JSON with `-J`)     |
+| `i`, `index`   | 0-based line index across all inputs (AWK's `NR - 1`)                  |
+| `c`, `columns` | line split into columns (see `-F`); in `-1` mode: an array of rows     |
+| `f`, `file`    | current file name (`-` for stdin)                                      |
+| `lines`        | array of all lines (`-1` mode only)                                    |
+| `s`, `n`, `a`  | pre-declared accumulators: `''`, `0`, `[]` (may be redeclared in `-b`) |
 
 `String.prototype.test(regexOrString)` is added for convenience, so that
 `l.test(/re/)` reads left to right.
@@ -86,23 +95,24 @@ The value of the last expression replaces the line:
 
 Flags follow grep and AWK where they have an equivalent:
 
-| Flag                         | Origin  | Meaning                                                           |
-| ---------------------------- | ------- | ----------------------------------------------------------------- |
-| `-b, --begin <code>`         | `BEGIN` | run before reading input (repeatable)                             |
-| `-e, --end <code>`           | `END`   | run after reading input; its value is printed                     |
-| `-f, --file <file>`          | both    | read the code from a file                                         |
-| `-F, --field-separator <fs>` | AWK     | column separator (see below)                                      |
-| `-v, --invert-match`         | grep    | print the lines that the code excludes                            |
-| `-c, --count`                | grep    | print only the number of selected lines                           |
-| `-m, --max-count <n>`        | grep    | stop after `n` selected lines                                     |
-| `-n, --line-number`          | grep    | prefix output with the 1-based line number (per file)             |
-| `-H, --with-filename`        | grep    | prefix output with the file name                                  |
-| `-q, --quiet`                | grep    | print nothing, exit on the first selected line                    |
-| `-z, --null-data`            | grep    | records are NUL-separated (pairs with `find -print0`)             |
-| `--rs`, `--ors`, `--ofs`     | AWK     | input record, output record, and output field separators          |
-| `-1, --slurp`                | nip     | run the code once for the whole input                             |
-| `-j, --json`                 |         | print results as JSON (one per line; pretty-printed in `-1` mode) |
-| `-J, --json-input`           |         | parse each line (the whole input in `-1` mode) as JSON            |
+| Flag                         | Origin  | Meaning                                                                                                                                              |
+| ---------------------------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `-b, --begin <code>`         | `BEGIN` | run before reading input (repeatable)                                                                                                                |
+| `-e, --end <code>`           | `END`   | run after reading input; its value is printed                                                                                                        |
+| `-f, --file <file>`          | both    | read the code from a file                                                                                                                            |
+| `-F, --field-separator <fs>` | AWK     | column separator (see below)                                                                                                                         |
+| `-v, --invert-match`         | grep    | print the lines that the code excludes                                                                                                               |
+| `-c, --count`                | grep    | print only the number of selected lines                                                                                                              |
+| `-m, --max-count <n>`        | grep    | stop after `n` selected lines                                                                                                                        |
+| `-n, --line-number`          | grep    | prefix output with the 1-based line number (per file)                                                                                                |
+| `-H, --with-filename`        | grep    | prefix output with the file name                                                                                                                     |
+| `-q, --quiet`                | grep    | print nothing, exit on the first selected line                                                                                                       |
+| `-z, --null-data`            | grep    | records are NUL-separated (pairs with `find -print0`)                                                                                                |
+| `-s, --slice <start,end>`    | JS      | only process these lines of each file, like `Array.slice()`: `1` skips a header, `1,-1` also a footer, `,-3` drops the last 3, `-5` keeps the last 5 |
+| `--rs`, `--ors`, `--ofs`     | AWK     | input record, output record, and output field separators                                                                                             |
+| `-1, --slurp`                | nip     | run the code once for the whole input                                                                                                                |
+| `-j, --json`                 |         | print results as JSON (one per line; pretty-printed in `-1` mode)                                                                                    |
+| `-J, --json-input`           |         | parse each line (the whole input in `-1` mode) as JSON                                                                                               |
 
 Field separator (`-F`), as in AWK: `" "` (default) splits on runs of whitespace
 and ignores leading/trailing whitespace; a single character is literal; longer

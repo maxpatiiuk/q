@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parseCommand, UsageError } from './options.ts';
+import { parseCommand, parseSlice, UsageError } from './options.ts';
 
 const parseOptions = (
   args: readonly string[],
@@ -98,5 +98,30 @@ describe(parseCommand, () => {
     expect(() => parseCommand(['--nope', 'l'])).toThrow(UsageError);
     expect(() => parseCommand(['-m', '-1', 'l'])).toThrow(UsageError);
     expect(() => parseCommand(['--rs', '', 'l'])).toThrow(UsageError);
+  });
+});
+
+describe(parseSlice, () => {
+  it('parses Array.slice() arguments', () => {
+    expect(parseSlice('1')).toEqual({ start: 1, end: undefined });
+    expect(parseSlice('1,-1')).toEqual({ start: 1, end: -1 });
+    expect(parseSlice(',-3')).toEqual({ start: 0, end: -3 });
+    expect(parseSlice('2,')).toEqual({ start: 2, end: undefined });
+  });
+
+  it('rejects invalid slices', () => {
+    expect(() => parseSlice('a')).toThrow(UsageError);
+    expect(() => parseSlice('1,2,3')).toThrow(UsageError);
+    expect(() => parseSlice('1.5')).toThrow(UsageError);
+  });
+
+  it('accepts negative slices as a separate argument', () => {
+    const slice = (args: readonly string[]) => {
+      const command = parseCommand(args);
+      return command.type === 'run' ? command.options.slice : undefined;
+    };
+    expect(slice(['-s', '-3', 'l'])).toEqual({ start: -3, end: undefined });
+    expect(slice(['--slice', '-3,-1', 'l'])).toEqual({ start: -3, end: -1 });
+    expect(slice(['-s-2', 'l'])).toEqual({ start: -2, end: undefined });
   });
 });

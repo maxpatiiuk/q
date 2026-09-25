@@ -81,6 +81,31 @@ describe(compileProgram, () => {
     expect(program.end()).toBe(2);
   });
 
+  it('pre-declares accumulators that --begin may redeclare', async () => {
+    const defaults = await compileProgram(
+      { begin: '', main: '[s, n, a]', end: '' },
+      console,
+    );
+    expect(defaults.main(record)).toEqual(['', 0, []]);
+    const redeclared = await compileProgram(
+      { begin: 'let n = 5', main: 'n', end: '' },
+      console,
+    );
+    expect(redeclared.main(record)).toBe(5);
+  });
+
+  it('calls a returned function with the line', async () => {
+    const compile = (main: string) =>
+      compileProgram({ begin: '', main, end: '' }, console);
+    expect((await compile('l.toUpperCase')).main(record)).toBe('A B');
+    expect((await compile('(x) => x + "!"')).main(record)).toBe('a b!');
+    expect((await compile('String')).main(record)).toBe('a b');
+    expect(await (await compile('async () => l')).main(record)).toBe('a b');
+    expect(await (await compile('await 0; (x) => x.length')).main(record)).toBe(
+      3,
+    );
+  });
+
   it('runs --begin once, at compile time', async () => {
     const log = vi.fn();
     await compileProgram(

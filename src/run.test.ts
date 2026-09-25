@@ -73,6 +73,33 @@ describe(run, () => {
     expect((await ni(['-1', 'lines.length'], shells)).stdout).toBe('3\n');
   });
 
+  it('calls returned functions', async () => {
+    expect((await ni(['l.toUpperCase'], 'a\nb\n')).stdout).toBe('A\nB\n');
+    expect((await ni(['Number'], '1\nx\n')).stdout).toBe('1\nNaN\n');
+  });
+
+  it('pre-declares accumulators', async () => {
+    expect((await ni(['n += +c[1];', '-e', 'n'], 'a 1\nb 2\n')).stdout).toBe(
+      '3\n',
+    );
+    expect((await ni(['a.push(c[0]);', '-e', 'a'], 'a 1\nb 2\n')).stdout).toBe(
+      'a b\n',
+    );
+  });
+
+  it('slices the lines of each file', async () => {
+    const input = 'header\na\nb\nfooter\n';
+    expect((await ni(['-n', '-s', '1,-1', 'l'], input)).stdout).toBe(
+      '2:a\n3:b\n',
+    );
+    expect((await ni(['-s', '-2', '`${i}:${l}`'], input)).stdout).toBe(
+      '0:b\n1:footer\n',
+    );
+    expect((await ni(['-1', '-s', ',2', 'lines'], input)).stdout).toBe(
+      'header\na\n',
+    );
+  });
+
   it('runs --begin and --end with shared state', async () => {
     expect(
       await ni(
