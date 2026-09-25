@@ -31,7 +31,7 @@
   "packageManager": "pnpm@10.33.0",
   "repository": {
     "type": "git",
-    "url": "https://github.com/maxpatiiuk/ni"
+    "url": "https://github.com/maxpatiiuk/q"
   },
   "devDependencies": {
     "@types/node": "^24.13.6",
