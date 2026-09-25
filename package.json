@@ -1,11 +1,11 @@
 {
-  "name": "@maxpatiiuk/ni",
+  "name": "@maxpatiiuk/q",
   "version": "0.1.0",
   "description": "AWK with modern syntax: process text line by line with JavaScript expressions",
   "type": "module",
   "license": "MIT",
   "bin": {
-    "ni": "./dist/cli.js"
+    "q": "./dist/cli.js"
   },
   "files": [
     "dist"

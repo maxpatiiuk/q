@@ -21,7 +21,7 @@ export const isExcluded = (value: unknown): value is undefined | null | false =>
  * Turn the user code's return value into the text to print, or `undefined` if
  * the record is excluded.
  *
- * - a RegExp is tested against the record (`ni '/zsh/'`)
+ * - a RegExp is tested against the record (`q '/zsh/'`)
  * - `true` keeps the original record
  * - `undefined`, `null`, `false` exclude the record
  * - anything else replaces the record

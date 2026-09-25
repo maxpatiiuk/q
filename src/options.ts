@@ -39,20 +39,20 @@ export class UsageError extends Error {
   override name = 'UsageError';
 }
 
-export const usage = `Usage: ni [options] <code> [file...]
-       ni [options] -f <code-file> [file...]
+export const usage = `Usage: q [options] <code> [file...]
+       q [options] -f <code-file> [file...]
 
 Run JavaScript code for each line of input. The value of the last expression
 is printed in place of the line:
   string, number, ...     print it
   true                    print the original line
   function                called with the line as "this" (and as the argument
-                          if it takes any), e.g. ni l.toUpperCase, ni Number
+                          if it takes any), e.g. q l.toUpperCase, q Number
   undefined, null, false  skip the line
-  RegExp                  print the line if it matches (ni '/error/i')
+  RegExp                  print the line if it matches (q '/error/i')
   array                   print items joined by spaces (by newlines in -1 mode)
   object                  print as JSON
-A trailing semicolon disables the implicit return (ni 'console.log(l);').
+A trailing semicolon disables the implicit return (q 'console.log(l);').
 
 Variables:
   l, line        current line (the whole input in -1 mode)
@@ -93,11 +93,11 @@ Options:
 Exit status is 0 if any line was selected, 1 otherwise, and 2 on error.
 
 Examples:
-  ls | ni 'l.toUpperCase()'
-  ls | ni '/zsh/'
-  ps aux | ni 'c[10]'
-  ni -F, -s 1 'n += +c[2];' -e n data.csv
-  cat data.json | ni -1J 'l.items.map((item) => item.name)'`;
+  ls | q 'l.toUpperCase()'
+  ls | q '/zsh/'
+  ps aux | q 'c[10]'
+  q -F, -s 1 'n += +c[2];' -e n data.csv
+  cat data.json | q -1J 'l.items.map((item) => item.name)'`;
 
 const optionsConfig = {
   begin: { type: 'string', short: 'b', multiple: true },

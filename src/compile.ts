@@ -117,8 +117,8 @@ export const accumulators = "let s = '', n = 0, a = [];";
 
 /**
  * A function result is called with the line as `this`, so that returning a
- * method works: `ni 'l.toUpperCase'`. Functions that take arguments get the
- * line: `ni Number`, `ni 'JSON.parse'`, `ni '(x) => x.trim()'`.
+ * method works: `q 'l.toUpperCase'`. Functions that take arguments get the
+ * line: `q Number`, `q 'JSON.parse'`, `q '(x) => x.trim()'`.
  */
 function callResult(result: unknown, line: unknown): unknown {
   if (typeof result === 'function') {

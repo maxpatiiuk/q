@@ -50,7 +50,7 @@ const formatError = (error: unknown): string =>
 
 export async function run(io: Io): Promise<ExitCode> {
   const report = (message: string): void => {
-    io.stderr.write(`ni: ${message}\n`);
+    io.stderr.write(`q: ${message}\n`);
   };
 
   try {
@@ -66,7 +66,7 @@ export async function run(io: Io): Promise<ExitCode> {
     return await execute(command.options, io, report);
   } catch (error) {
     if (error instanceof UsageError) {
-      report(`${error.message}\nTry 'ni --help' for more information.`);
+      report(`${error.message}\nTry 'q --help' for more information.`);
     } else {
       report(
         error instanceof ProgramError ? error.message : formatError(error),

@@ -2,7 +2,7 @@
 import { run } from './run.ts';
 
 process.stdout.on('error', (error: NodeJS.ErrnoException) => {
-  // Downstream stopped reading (e.g. `ni ... | head`). That is not an error
+  // Downstream stopped reading (e.g. `q ... | head`). That is not an error
   if (error.code === 'EPIPE') {
     process.exit(0);
   }

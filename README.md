@@ -1,4 +1,4 @@
-# ni
+# q
 
 AWK with modern syntax. Process text line by line with JavaScript expressions.
 
@@ -7,47 +7,47 @@ dependencies.
 
 ```sh
 # Transform each line (the last expression is the output)
-ls | ni 'l.toUpperCase()'
+ls | q 'l.toUpperCase()'
 
 # Filter: return a boolean, or a falsy value to exclude the line
-ls | ni 'l.includes("zsh")'
-ls | ni 'l.test(/zsh/)'
+ls | q 'l.includes("zsh")'
+ls | q 'l.test(/zsh/)'
 
 # Shorthand: a regular expression filters lines, like grep
-ls | ni '/zsh/'
-ls | ni -v '/zsh/'
+ls | q '/zsh/'
+ls | q -v '/zsh/'
 
 # Extract
-ls | ni 'l.match(/z(s+)h/)?.[1]'
+ls | q 'l.match(/z(s+)h/)?.[1]'
 
 # Columns (like AWK's $1, $2, ... but 0-based)
-ps aux | ni 'c[10]'
-ni -F, 'c.slice(0, 2)' data.csv
+ps aux | q 'c[10]'
+q -F, 'c.slice(0, 2)' data.csv
 
 # Process the whole input at once
-ls | ni -1 'l.split("\n").reverse()'
-ls | ni -1 'lines.toSorted().toReversed()'
+ls | q -1 'l.split("\n").reverse()'
+ls | q -1 'lines.toSorted().toReversed()'
 
 # Return a function: called with the line
-ls | ni 'l.toUpperCase'
-ls | ni Number
+ls | q 'l.toUpperCase'
+ls | q Number
 
 # Sum a column, skipping the header line (n, s, a are pre-declared as 0, '', [])
-ls -al | ni -s 1 'n += +c[4];' -e n
+ls -al | q -s 1 'n += +c[4];' -e n
 
 # Setup and summary (variables from --begin are visible everywhere)
-ni -b 'let sum = 0' 'sum += +c[2];' -e 'sum' data.txt
-ni -b 'console.log("start")' 'let t = c[0]; `${t}${c[2]}`' -e 'console.log("end")'
+q -b 'let sum = 0' 'sum += +c[2];' -e 'sum' data.txt
+q -b 'console.log("start")' 'let t = c[0]; `${t}${c[2]}`' -e 'console.log("end")'
 
 # JSON in, JSON out
-curl -s https://api.github.com/repos/nodejs/node | ni -1J 'l.stargazers_count'
-cat events.ndjson | ni -Jj '({ type: l.type, at: l.created_at })'
+curl -s https://api.github.com/repos/nodejs/node | q -1J 'l.stargazers_count'
+cat events.ndjson | q -Jj '({ type: l.type, at: l.created_at })'
 ```
 
 ## Install
 
 ```sh
-pnpm add -g @maxpatiiuk/ni
+pnpm add -g @maxpatiiuk/q
 ```
 
 Requires Node.js 22+.
@@ -70,11 +70,11 @@ The value of the last expression replaces the line:
 - The code is a function body: statements are allowed, and the last expression
   statement is returned implicitly (`let t = c[0]; t + c[2]`).
 - Like in Rust, a trailing semicolon opts out of the implicit return:
-  `ni 'console.log(l);'`. `return` works too.
+  `q 'console.log(l);'`. `return` works too.
 - `await` works anywhere.
 - Like AWK, code runs in sloppy mode, so assigning to an undeclared variable
   creates a global that persists across lines:
-  `ni -b 'seen = new Set()' '!seen.has(l) && !!seen.add(l)'` (deduplicate).
+  `q -b 'seen = new Set()' '!seen.has(l) && !!seen.add(l)'` (deduplicate).
 - `console.log()` output stays in order with the regular output.
 
 ## Variables
